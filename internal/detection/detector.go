@@ -1,49 +1,42 @@
 package detection
 
 import (
-	"fmt"
+	"testing"
 	"time"
 
 	"github.com/hami7-glitch/NetGhost/internal/model"
 )
 
-type Alert struct {
-	Message string
-	Event   model.NetworkEvent
+func TestDetectPortScan(t *testing.T) {
+	baseTime := time.Now()
+
+	events := []model.NetworkEvent{
+		{SourceIP: "192.168.1.50", DestPort: 21, Timestamp: baseTime},
+		{SourceIP: "192.168.1.50", DestPort: 22, Timestamp: baseTime.Add(1 * time.Second)},
+		{SourceIP: "192.168.1.50", DestPort: 23, Timestamp: baseTime.Add(2 * time.Second)},
+		{SourceIP: "192.168.1.50", DestPort: 80, Timestamp: baseTime.Add(3 * time.Second)},
+		{SourceIP: "192.168.1.50", DestPort: 443, Timestamp: baseTime.Add(4 * time.Second)},
+	}
+
+	alert := Analyze(events)
+
+	if alert == nil {
+		t.Fatal("expected a port scan alert")
+	}
 }
 
-const (
-	portScanThreshold = 5
-	portScanWindow    = 10 * time.Second
-)
+func TestNormalTraffic(t *testing.T) {
+	baseTime := time.Now()
 
-func Analyze(events []model.NetworkEvent) *Alert {
-	if len(events) == 0 {
-		return nil
+	events := []model.NetworkEvent{
+		{SourceIP: "192.168.1.50", DestPort: 443, Timestamp: baseTime},
+		{SourceIP: "192.168.1.50", DestPort: 443, Timestamp: baseTime.Add(1 * time.Second)},
+		{SourceIP: "192.168.1.50", DestPort: 443, Timestamp: baseTime.Add(2 * time.Second)},
 	}
 
-	portsByIP := make(map[string]map[uint16]bool)
+	alert := Analyze(events)
 
-	for _, event := range events {
-		if _, exists := portsByIP[event.SourceIP]; !exists {
-			portsByIP[event.SourceIP] = make(map[uint16]bool)
-		}
-
-		portsByIP[event.SourceIP][event.DestPort] = true
+	if alert != nil {
+		t.Fatal("did not expect a port scan alert")
 	}
-
-	for sourceIP, ports := range portsByIP {
-		if len(ports) >= portScanThreshold {
-			return &Alert{
-				Message: fmt.Sprintf(
-					"Possible port scan detected from %s: %d different ports",
-					sourceIP,
-					len(ports),
-				),
-				Event: events[0],
-			}
-		}
-	}
-
-	return nil
 }
