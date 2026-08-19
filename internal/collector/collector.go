@@ -11,7 +11,7 @@ func CollectSample() model.NetworkEvent {
 		Timestamp: time.Now(),
 		SourceIP:  "192.168.1.10",
 		DestIP:    "8.8.8.8",
-		DestPort:  443,
+		DestPort:  23,
 		Protocol:  "TCP",
 	}
 }
