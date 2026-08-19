@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hami7-glitch/NetGhost/internal/collector"
 	"github.com/hami7-glitch/NetGhost/internal/detection"
+	"github.com/hami7-glitch/NetGhost/internal/model"
 )
 
 func main() {
@@ -12,16 +14,16 @@ func main() {
 	fmt.Println("Network monitoring system starting...")
 	fmt.Println()
 
-	event := collector.CollectSample()
+	var events []model.NetworkEvent
 
-	fmt.Println("Network Event:")
-	fmt.Println("Source IP:", event.SourceIP)
-	fmt.Println("Destination IP:", event.DestIP)
-	fmt.Println("Destination Port:", event.DestPort)
-	fmt.Println("Protocol:", event.Protocol)
-	fmt.Println()
+	for i := 0; i < 5; i++ {
+		event := collector.CollectSample()
+		event.DestPort = uint16(20 + i)
+		event.Timestamp = time.Now()
+		events = append(events, event)
+	}
 
-	alert := detection.Analyze(event)
+	alert := detection.Analyze(events)
 
 	if alert != nil {
 		fmt.Println("🚨 ALERT:", alert.Message)
